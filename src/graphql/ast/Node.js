@@ -123,6 +123,7 @@ module.exports = class Node {
   }
 
   getCrud() {
+    if (!this.getDirective('model')) return '';
     return nvl(uvl(this.getDirectiveArg('field', 'crud'), this.getDirectiveArg('model', 'crud'), 'crud'), '');
   }
 

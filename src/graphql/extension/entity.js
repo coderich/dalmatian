@@ -16,8 +16,6 @@ module.exports = (schema) => {
           # countSelf(where: ${modelName}InputWhere): Int @field(crud: "r" persist: false)
         }
       `;
-    }).concat(`
-      enum SortOrderEnum { ASC DESC }
-    `),
+    }),
   });
 };

@@ -1,8 +1,10 @@
 const Model = require('../data/Model');
 const Drivers = require('../driver');
 const Schema = require('../graphql/ast/Schema');
-const apiExt = require('../graphql/extension/api');
-const typeExt = require('../graphql/extension/type');
+const crudExt = require('../graphql/extension/crud');
+const specExt = require('../graphql/extension/spec');
+const resolvableExt = require('../graphql/extension/resolvable');
+const entityExt = require('../graphql/extension/entity');
 const frameworkExt = require('../graphql/extension/framework');
 const { identifyOnDeletes } = require('../service/schema.service');
 
@@ -67,14 +69,15 @@ module.exports = class extends Schema {
   }
 
   getServerApiSchema() {
-    this.extend(frameworkExt(this), typeExt(this));
-    this.extend(apiExt(this));
+    // this.extend(frameworkExt(this), specExt(this), entityExt(this));
+    // this.extend(crudExt(this), resolvableExt(this));
     return super.getSchema();
   }
 
   makeServerApiSchema() {
-    this.extend(frameworkExt(this), typeExt(this));
-    this.extend(apiExt(this));
+    this.extend(frameworkExt(this), specExt(this));
+    // this.extend(frameworkExt(this), specExt(this), entityExt(this));
+    // this.extend(crudExt(this), resolvableExt(this));
     return super.makeExecutableSchema();
   }
 };
