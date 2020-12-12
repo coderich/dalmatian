@@ -886,6 +886,28 @@ module.exports = (driver = 'mongo', options = {}) => {
         expect(art.sections[0].person).toBe(christie.id);
         expect((await art.sections[0].$person).name).toBe('Christie');
       });
+
+      test('Do not clobber embedded arrays', async () => {
+        const art = await resolver.match('Art').save({ name: 'clobber1', sections: [{ name: 'name1', description: 'desc1' }, { name: 'name2', description: 'desc2' }] });
+        const update = await resolver.match('Art').id(art.id).save({ sections: [{ name: 'section1' }, { name: 'section2' }] });
+        expect(update.sections).toMatchObject([{ name: 'section1', description: 'desc1' }, { name: 'section2', description: 'desc2' }]);
+        const theArt = await resolver.match('Art').id(art.id).one();
+        // if (driver === 'mongo') {
+        //   const rawArt = await resolver.raw('Art').findOne({ _id: art.id });
+        //   console.log(rawArt);
+        // }
+        expect(theArt.sections).toMatchObject([{ name: 'section1', description: 'desc1' }, { name: 'section2', description: 'desc2' }]);
+      });
+
+      test('Do clobber embedded arrays', async () => {
+        const art = await resolver.match('Art').save({ name: 'clobber2', sections: [{ name: 'name1', description: 'desc1' }, { name: 'name2', description: 'desc2' }] });
+        const update = await resolver.match('Art').id(art.id).save({ sections: [{ name: 'section1' }] });
+        console.log(update.sections);
+        expect(update.sections).toMatchObject([{ name: 'section1' }]);
+        expect(update.sections[0].description).toBeUndefined();
+        // const theArt = await resolver.match('Art').id(art.id).one();
+        // expect(theArt.sections).toMatchObject([{ name: 'section1' }]);
+      });
     });
   });
 };

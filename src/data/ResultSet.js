@@ -32,13 +32,11 @@ module.exports = class {
 
   getResults(resolver, query) {
     return this.promise.then((results) => {
-      // console.time('hydrate');
       return mapPromise(results, (result) => {
         return Promise.resolve(this.model.deserialize(result)).then((doc) => {
           return makeDataResolver(doc, this.model, resolver, query);
         });
       }).then((data) => {
-        // console.timeEnd('hydrate');
         return data;
       });
     });

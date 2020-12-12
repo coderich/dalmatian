@@ -92,7 +92,14 @@ module.exports = class QueryWorker {
     input = input || {};
     const { resolver } = this;
     const [id, model, options] = [query.getId(), query.getModel(), query.getOptions()];
+
     const doc = await resolver.match(model).id(id).options(options).one({ required: true });
+
+    // //
+    // const where = { id: model.idValue(id) };
+    // const $where = await model.resolveBoundValues(where);
+    // const resolvedWhere = await resolveModelWhereClause(resolver, model, $where);
+    // const doc = await model.get(resolvedWhere, Object.assign({}, options, { selectAll: true })).promise;
 
     // Set default values for update
     const merged = mergeDeep(doc, removeUndefinedDeep(input));
@@ -113,7 +120,7 @@ module.exports = class QueryWorker {
 
     return createSystemEvent('Mutation', { method: 'splice', model, resolver, query, input: data, doc, merged }, async () => {
       await model.validateData(data, doc, 'update');
-      return model.update(id, data, mergeDeep(doc, removeUndefinedDeep(data)), options).hydrate(resolver, query);
+      return model.replace(id, data, mergeDeep(doc, removeUndefinedDeep(data)), options).hydrate(resolver, query);
     });
   }
 

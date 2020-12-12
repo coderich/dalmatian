@@ -36,11 +36,10 @@ module.exports = class extends Schema {
 
       // Create model indexes
       return Promise.all(entities.map(async (model) => {
-        const key = model.getKey();
         const indexes = model.getIndexes();
         const driver = model.getDriver();
-        if (driver.createCollection) await driver.createCollection(key);
-        return driver.createIndexes(key, indexes);
+        if (driver.createCollection) await driver.createCollection(model);
+        return driver.createIndexes(model, indexes);
       }));
     });
   }

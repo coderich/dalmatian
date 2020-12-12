@@ -24,29 +24,33 @@ class Cypher {
   find(model, where = {}, options) {
     const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
-    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN n`, $params, options);
+    return this.query(`MATCH (n:${model.getKey()}) ${$wherePart} RETURN n`, $params, options);
   }
 
   count(model, where = {}, options) {
     const { $where, $params } = Cypher.normalizeWhereClause(where);
     const $wherePart = $where ? `WHERE ${$where}` : '';
-    return this.query(`MATCH (n:${model}) ${$wherePart} RETURN count(n) AS n`, $params, options).then(counts => counts[0]);
+    return this.query(`MATCH (n:${model.getKey()}) ${$wherePart} RETURN count(n) AS n`, $params, options).then(counts => counts[0]);
   }
 
   create(model, data, options) {
-    return this.query(`CREATE (n:${model} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) SET n.id = id(n) RETURN n`, data, options).then(docs => docs[0]);
+    return this.query(`CREATE (n:${model.getKey()} { ${Object.keys(data).map(k => `${k}:{${k}}`)} }) SET n.id = id(n) RETURN n`, data, options).then(docs => docs[0]);
   }
 
   update(model, id, data, doc, options) {
-    return this.query(`MATCH (n:${model}) WHERE n.id = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }, options).then(docs => docs[0]);
+    return this.query(`MATCH (n:${model.getKey()}) WHERE n.id = { id } SET ${Object.keys(doc).map(k => `n.${k}={${k}}`)} RETURN n`, { id, ...doc }, options).then(docs => docs[0]);
+  }
+
+  replace(model, id, data, doc, options) {
+    return this.update(model, id, data, doc, options);
   }
 
   delete(model, id, doc, options) {
-    return this.query(`MATCH (n:${model}) WHERE n.id = { id } DELETE n`, { id }, options).then(() => doc);
+    return this.query(`MATCH (n:${model.getKey()}) WHERE n.id = { id } DELETE n`, { id }, options).then(() => doc);
   }
 
   dropModel(model) {
-    return this.query(`MATCH (n:${model}) DELETE n`);
+    return this.query(`MATCH (n:${model.getKey()}) DELETE n`);
   }
 
   createIndexes(model, indexes) {
@@ -54,7 +58,7 @@ class Cypher {
       if (on.length > 1) return null;
 
       switch (type) {
-        case 'unique': return this.query(`CREATE CONSTRAINT on (n:${model}) ASSERT (${on.map(f => `n.${f}`).join(',')}) IS UNIQUE`);
+        case 'unique': return this.query(`CREATE CONSTRAINT on (n:${model.getKey()}) ASSERT (${on.map(f => `n.${f}`).join(',')}) IS UNIQUE`);
         default: return null;
       }
     }));

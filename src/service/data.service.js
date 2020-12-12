@@ -18,6 +18,8 @@ exports.makeDataResolver = (doc, model, resolver, query) => {
     }
   });
 
+  if (id === undefined) return dataResolver;
+
   return Object.defineProperties(dataResolver, {
     id: { value: id, enumerable: true, writable: true },
     $id: { value: guid },

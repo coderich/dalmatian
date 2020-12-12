@@ -1,6 +1,6 @@
 const { get } = require('lodash');
 const { MongoClient, ObjectID } = require('mongodb');
-const { promiseRetry, globToRegex, proxyDeep, isScalarDataType, toKeyObj, proxyPromise } = require('../service/app.service');
+const { promiseRetry, globToRegex, proxyDeep, isScalarDataType, toKeyObj, proxyPromise, ensureArray } = require('../service/app.service');
 
 module.exports = class MongoDriver {
   constructor(config, schema) {
@@ -19,14 +19,10 @@ module.exports = class MongoDriver {
 
   connect() {
     return MongoClient.connect(this.config.uri, this.config.options);
-    // return MongoClient.connect(this.config.uri, {
-    //   useNewUrlParser: true,
-    //   // useUnifiedTopology: true,
-    //   tlsInsecure: true,
-    // });
   }
 
-  query(collection, method, ...args) {
+  query(model, method, ...args) {
+    const collection = model.getKey();
     if (get(args, '1.debug')) console.log(method, JSON.stringify(args));
     return this.connection.then(client => client.db().collection(collection)[method](...args));
   }
@@ -58,7 +54,18 @@ module.exports = class MongoDriver {
 
   update(model, id, data, doc, options) {
     const $update = Object.entries(doc).reduce((prev, [key, value]) => {
+      // const field = model.getField(key);
+
+      // if (!field.isScalar() && field.isEmbedded()) {
+      //   if (field.isArray() && ensureArray(value).length === 0) Object.assign(prev.$set, { [key]: [] });
+      //   Object.entries(toKeyObj(value)).map(([k, v]) => Object.assign(prev.$set, { [`${key}.${k}`]: v }));
+      // } else {
+      //   Object.assign(prev.$set, { [key]: value });
+      // }
+
+      if (key === model.idKey()) return prev;
       Object.assign(prev.$set, { [key]: value });
+
       return prev;
     }, { $set: {} });
 
@@ -66,10 +73,10 @@ module.exports = class MongoDriver {
     return this.query(model, 'updateOne', { _id: id }, $update, options).then(() => doc);
   }
 
-  // replace(model, id, data, doc, options) {
-  //   MongoDriver.normalizeOptions(options);
-  //   return this.query(model, 'replaceOne', { _id: id }, doc, options).then(() => doc);
-  // }
+  replace(model, id, data, doc, options) {
+    MongoDriver.normalizeOptions(options);
+    return this.query(model, 'replaceOne', { _id: id }, doc, options).then(() => doc);
+  }
 
   delete(model, id, doc, options) {
     MongoDriver.normalizeOptions(options);
@@ -84,7 +91,7 @@ module.exports = class MongoDriver {
   }
 
   raw(model) {
-    return proxyPromise(this.connection.then(client => client.db().collection(model)));
+    return proxyPromise(this.connection.then(client => client.db().collection(model.getKey())));
   }
 
   dropModel(model) {
@@ -114,7 +121,7 @@ module.exports = class MongoDriver {
   }
 
   createCollection(model) {
-    return this.connection.then(client => client.db().createCollection(model)).catch(e => null);
+    return this.connection.then(client => client.db().createCollection(model.getKey())).catch(e => null);
   }
 
   createIndexes(model, indexes) {
@@ -128,9 +135,8 @@ module.exports = class MongoDriver {
     }));
   }
 
-  normalizeWhereAggregation(modelName, schema, where, count = false) {
+  normalizeWhereAggregation(model, schema, where, count = false) {
     const $agg = [];
-    const model = schema.getModel(modelName);
     const $match = MongoDriver.normalizeWhere(where);
 
     const { version = 0 } = this.getDirectives();

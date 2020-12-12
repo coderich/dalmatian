@@ -6,6 +6,17 @@ const { ObjectID } = require('mongodb');
 const ObjectHash = require('object-hash');
 
 const overwriteMerge = (d, s, o) => s;
+
+const smartMerge = (d, s, o) => {
+  if (d.length !== s.length) return s;
+
+  return d.map((el, i) => {
+    const val = s[i];
+    if (exports.isScalarValue(el) || exports.isScalarValue(val)) return val;
+    return exports.mergeDeep(el, val);
+  });
+};
+
 const combineMerge = (target, source, options) => {
   const destination = target.slice();
 

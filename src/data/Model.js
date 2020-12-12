@@ -26,47 +26,52 @@ module.exports = class extends Model {
   // CRUD
   get(where, options) {
     this.normalizeOptions(options);
-    return new ResultSet(this, this.driver.dao.get(this.getKey(), this.normalize(where), options));
+    return new ResultSet(this, this.driver.dao.get(this, this.normalize(where), options));
   }
 
   find(where = {}, options) {
     this.normalizeOptions(options);
-    return new ResultSet(this, this.driver.dao.find(this.getKey(), this.normalize(where), options));
+    return new ResultSet(this, this.driver.dao.find(this, this.normalize(where), options));
   }
 
   count(where = {}, options) {
     this.normalizeOptions(options);
-    return this.driver.dao.count(this.getKey(), this.normalize(where), options);
+    return this.driver.dao.count(this, this.normalize(where), options);
   }
 
   create(data, options) {
     this.normalizeOptions(options);
-    return new ResultSet(this, this.driver.dao.create(this.getKey(), this.serialize(data), options));
+    return new ResultSet(this, this.driver.dao.create(this, this.serialize(data), options));
   }
 
   update(id, data, doc, options) {
     this.normalizeOptions(options);
-    return new ResultSet(this, this.driver.dao.update(this.getKey(), this.idValue(id), this.serialize(data), this.serialize(doc), options));
+    return new ResultSet(this, this.driver.dao.update(this, this.idValue(id), this.serialize(data), this.serialize(doc), options));
+  }
+
+  replace(id, data, doc, options) {
+    this.normalizeOptions(options);
+    return new ResultSet(this, this.driver.dao.replace(this, this.idValue(id), this.serialize(data), this.serialize(doc), options));
   }
 
   delete(id, doc, options) {
     this.normalizeOptions(options);
-    return new ResultSet(this, this.driver.dao.delete(this.getKey(), this.idValue(id), doc, options));
+    return new ResultSet(this, this.driver.dao.delete(this, this.idValue(id), doc, options));
   }
 
   native(method, ...args) {
     switch (method) {
-      case 'count': return this.driver.dao.native(this.getKey(), method, ...args);
-      default: return new ResultSet(this, this.driver.dao.native(this.getKey(), method, ...args));
+      case 'count': return this.driver.dao.native(this, method, ...args);
+      default: return new ResultSet(this, this.driver.dao.native(this, method, ...args));
     }
   }
 
   raw() {
-    return this.driver.dao.raw(this.getKey());
+    return this.driver.dao.raw(this);
   }
 
   drop() {
-    return this.driver.dao.dropModel(this.getKey());
+    return this.driver.dao.dropModel(this);
   }
 
   //
@@ -80,7 +85,7 @@ module.exports = class extends Model {
   }
 
   normalizeOptions(options) {
-    options.fields = this.getPersistableFields().map(f => f.getKey());
+    if (!options.selectAll) options.fields = this.getPersistableFields().map(f => f.getKey());
   }
 
   getDriver() {
