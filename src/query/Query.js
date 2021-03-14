@@ -269,6 +269,7 @@ module.exports = class Query {
         [key]: {
           name: field.getName(),
           type: field.getDataType(),
+          isArray: field.isArray(),
           schema: isEmbedded ? Query.getSchema(modelRef) : null,
         },
       });

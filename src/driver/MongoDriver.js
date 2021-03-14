@@ -3,9 +3,9 @@ const { MongoClient, ObjectID } = require('mongodb');
 const { proxyDeep, toKeyObj, globToRegex, proxyPromise, isScalarDataType, promiseRetry } = require('../service/app.service');
 
 const projectSchema = (schema, nesting = []) => {
-  return Object.entries(schema).reduce((prev, [key, { name, schema: subSchema }]) => {
+  return Object.entries(schema).reduce((prev, [key, { name, schema: subSchema, isArray }]) => {
     const arr = [...nesting, key];
-    const $key = subSchema ? projectSchema(subSchema, arr) : `$${arr.join('.$')}`;
+    const $key = !isArray && subSchema ? projectSchema(subSchema, arr) : `$${arr.join('.')}`;
     return Object.assign(prev, { [name]: $key });
   }, {});
 };
