@@ -2,6 +2,14 @@ const { get, has } = require('lodash');
 const { MongoClient, ObjectID } = require('mongodb');
 const { proxyDeep, toKeyObj, globToRegex, proxyPromise, isScalarDataType, promiseRetry } = require('../service/app.service');
 
+const projectSchema = (schema, nesting = []) => {
+  return Object.entries(schema).reduce((prev, [key, { name, schema: subSchema }]) => {
+    const arr = [...nesting, key];
+    const $key = subSchema ? projectSchema(subSchema, arr) : `$${arr.join('.$')}`;
+    return Object.assign(prev, { [name]: $key });
+  }, {});
+};
+
 module.exports = class MongoDriver {
   constructor(config, schema) {
     this.config = config;
@@ -135,7 +143,7 @@ module.exports = class MongoDriver {
   static getAddFields(query) {
     const { schema, where } = query;
 
-    return Object.entries(schema).reduce((prev, [key, type]) => {
+    return Object.entries(schema).reduce((prev, [key, { type }]) => {
       const value = where[key];
       if (value === undefined) return prev;
       if (!isScalarDataType(type)) return false;
@@ -146,7 +154,7 @@ module.exports = class MongoDriver {
   }
 
   static aggregateQuery(query) {
-    const { where: $match, sort, skip, limit } = query;
+    const { schema, where: $match, sort, skip, limit } = query;
     const $aggregate = [{ $match }];
 
     // Used for $regex matching
@@ -159,11 +167,17 @@ module.exports = class MongoDriver {
     if (limit) $aggregate.push({ $limit: limit });
 
     // Pagination
-    const { after, before, first, last } = query;
+    const { after, before, first } = query;
     if (after) $aggregate.push({ $match: { $or: Object.entries(after).reduce((prev, [key, value]) => prev.concat({ [key]: { $gt: value } }), []) } });
     if (before) $aggregate.push({ $match: { $or: Object.entries(before).reduce((prev, [key, value]) => prev.concat({ [key]: { $lt: value } }), []) } });
     if (first) $aggregate.push({ $limit: first });
-    // if (last) $aggregate.push({ $project: { docs: { $slice: ['$docs', -last] } } });
+
+    // Schema
+    $aggregate.push({ $project: projectSchema(schema) });
+    // $aggregate.push(Object.entries(schema).reduce((prev, [key, { name, schema: subSchema }]) => {
+    //   prev.$project[name] = `$${key}`;
+    //   return prev;
+    // }, { $project: {} }));
 
     return $aggregate;
   }

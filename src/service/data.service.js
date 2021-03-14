@@ -8,7 +8,7 @@ exports.makeDataResolver = (doc, model, resolver) => {
   const dataResolver = new DataResolver(doc, (data, prop) => model.resolve(data, prop, resolver));
 
   Object.entries(doc).forEach(([key, value]) => {
-    const field = model.getFieldByName(key);
+    const field = model.getFieldByKey(key);
 
     if (field && field.isEmbedded()) {
       const modelRef = field.getModelRef();

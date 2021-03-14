@@ -323,7 +323,9 @@ module.exports = (driver = 'mongo', options = {}) => {
         });
 
         test('Art', async () => {
-          expect(await resolver.match('Art').where({ sections: { id: artsy.sections[0].id } }).one()).toMatchObject(artsy);
+          const arts = await resolver.match('Art').many();
+          console.log(JSON.stringify(arts));
+          expect(await resolver.match('Art').where({ sections: { id: artsy.sections[0].id } }).one({ debug: true })).toMatchObject(artsy);
           expect(await resolver.match('Art').where({ 'sections.id': artsy.sections[0].id }).one()).toMatchObject(artsy);
         });
       }
