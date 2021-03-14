@@ -4,9 +4,19 @@ const { makeDataResolver } = require('../service/data.service');
 
 module.exports = class QueryResult {
   constructor(query, data) {
-    const { model, resolver, sort } = query.toObject();
+    const { model, resolver, select = {}, sort } = query.toObject();
+
+    // Select fields
+    const selectFields = Object.keys(select).map(f => model.getField(f).getName()).concat('id').concat(model.idKey());
 
     const results = map(data, (doc) => {
+      // Delete fields not selected (you do not want to deserialize everything)
+      Object.keys(doc).forEach((key) => {
+        if (selectFields.indexOf(key) === -1) delete doc[key];
+      });
+
+      // Deserialize and continue
+      doc = model.deserialize(doc);
       const sortPaths = keyPaths(sort);
       const sortValues = sortPaths.reduce((prev, path) => Object.assign(prev, { [path]: get(doc, path) }), {});
       const sortJSON = JSON.stringify(sortValues);
